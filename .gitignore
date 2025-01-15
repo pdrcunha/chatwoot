@@ -1,0 +1,5 @@
+docker/postgres/*
+!docker/postgres/.gitkeep
+docker/redis/*
+!docker/redis/.gitkeep
+.env
