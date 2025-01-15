@@ -3,9 +3,11 @@ version: '3'
 services:
   base: &base
     image: chatwoot/chatwoot:latest
-    env_file: .env ## Change this file for customized env variables
+    env_file: .env
     volumes:
       - /data/storage:/app/storage
+    networks:
+      - app_network  # Rede personalizada
 
   rails:
     <<: *base
@@ -13,7 +15,7 @@ services:
       - postgres
       - redis
     ports:
-      - '127.0.0.1:3000:3000'
+      - '3000:3000'  # Expõe a porta 3000 do container
     environment:
       - NODE_ENV=production
       - RAILS_ENV=production
@@ -21,6 +23,8 @@ services:
     entrypoint: docker/entrypoints/rails.sh
     command: ['bundle', 'exec', 'rails', 's', '-p', '3000', '-b', '0.0.0.0']
     restart: always
+    networks:
+      - app_network  # Conecta o serviço à rede personalizada
 
   sidekiq:
     <<: *base
@@ -33,19 +37,22 @@ services:
       - INSTALLATION_ENV=docker
     command: ['bundle', 'exec', 'sidekiq', '-C', 'config/sidekiq.yml']
     restart: always
+    networks:
+      - app_network  # Conecta o serviço à rede personalizada
 
   postgres:
     image: pgvector/pgvector:pg16
     restart: always
     ports:
-      - '127.0.0.1:5432:5432'
+      - '5432:5432'  # Expõe a porta 5432 do container
     volumes:
       - ./docker/postgres:/var/lib/postgresql/data
     environment:
       - POSTGRES_DB=chatwoot
       - POSTGRES_USER=postgres
-      # Please provide your own password.
       - POSTGRES_PASSWORD=postgres
+    networks:
+      - app_network  # Conecta o serviço à rede personalizada
 
   redis:
     image: redis:alpine
@@ -55,15 +62,22 @@ services:
     volumes:
       - ./docker/redis:/data
     ports:
-      - '127.0.0.1:6379:6379'
-
+      - '6379:6379'  # Expõe a porta 6379 do container
+    networks:
+      - app_network  # Conecta o serviço à rede personalizada
 
   nginx:
     image: nginx:alpine
     depends_on:
       - rails
     ports:
-      - '80:80'
+      - '80:80'  # Expõe a porta 80 do container
     volumes:
       - ./docker/nginx.conf:/etc/nginx/nginx.conf:ro
     restart: always
+    networks:
+      - app_network  # Conecta o serviço à rede personalizada
+
+networks:
+  app_network:
+    driver: bridge  # Rede personalizada tipo bridge
